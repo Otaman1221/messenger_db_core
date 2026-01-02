@@ -1,48 +1,62 @@
 <!DOCTYPE html>
-    <html lang="uk">
-    <head><meta charset="UTF-8"><title>Corp Web</title></head>
-    <body style="background:#1a1a1a;color:white;font-family:sans-serif;padding:20px;">
-        <h2>Corp Messenger Web</h2>
-        <div id="auth_block">
-            <input type="password" id="pass" placeholder="Вставте ваш токен">
-            <button onclick="save()">Увійти</button>
-        </div>
-        <div id="chat_block" style="display:none;">
-            <div id="chat" style="height:400px;overflow-y:auto;background:#222;padding:10px;margin-bottom:10px;border-radius:10px;"></div>
-            <input type="text" id="msg" placeholder="Повідомлення" style="width:70%;">
+<html lang="uk">
+<head>
+    <meta charset="UTF-8"><title>Corp Web Messenger</title>
+    <style>
+        body { background: #0f0f0f; color: #eee; font-family: sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; }
+        #auth { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; gap: 15px; }
+        input { padding: 12px; border-radius: 8px; border: 1px solid #333; background: #1a1a1a; color: white; width: 250px; outline: none; }
+        button { padding: 12px 20px; border-radius: 8px; border: none; background: #128c7e; color: white; cursor: pointer; }
+        #chat_block { display: none; flex-direction: column; height: 100vh; }
+        #chat { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
+        .msg { background: #222; padding: 10px; border-radius: 10px; max-width: 80%; align-self: flex-start; border-left: 3px solid #128c7e; }
+        .my { align-self: flex-end; border-left: none; border-right: 3px solid #075e54; background: #054d44; }
+        #input-area { background: #1a1a1a; padding: 15px; display: flex; gap: 10px; border-top: 1px solid #333; }
+    </style>
+</head>
+<body>
+    <div id="auth">
+        <h3>Вхід у CorpConnect</h3>
+        <input type="password" id="p" placeholder="Вставте токен">
+        <button onclick="save()">Увійти</button>
+    </div>
+    <div id="chat_block">
+        <div id="chat"></div>
+        <div id="input-area">
+            <input type="text" id="nick" placeholder="Нік" style="width:70px;">
+            <input type="text" id="m" placeholder="Повідомлення..." style="flex:1;">
             <button onclick="send()">></button>
         </div>
-        <script>
-            let t = localStorage.getItem('token');
-            if(t) showChat();
-            function save(){ t = document.getElementById('pass').value; localStorage.setItem('token', t); showChat(); }
-            function showChat(){ document.getElementById('auth_block').style.display='none'; document.getElementById('chat_block').style.display='block'; load(); setInterval(load, 5000); }
-            async function load(){
-                const res = await fetch(`https://api.github.com/repos/Otaman1221/messenger_db_core/contents/messages?t=${Date.now()}`, 
-                    {headers:{"Authorization":`token ${t}`}});
-                if(res.ok){
-                    const files = await res.json();
-                    let h = "";
-                    for(let f of files.slice(-15)){
-                        if(f.name.endsWith('.json')){
-                            const m = await (await fetch(f.download_url)).json();
-                            h += `<div><b>${m.nick}:</b> ${m.text}</div>`;
-                        }
-                    }
-                    document.getElementById('chat').innerHTML = h;
+    </div>
+    <script>
+        let t = localStorage.getItem('t');
+        if(t) show();
+        function save() { t = document.getElementById('p').value; localStorage.setItem('t', t); show(); }
+        function show() { document.getElementById('auth').style.display='none'; document.getElementById('chat_block').style.display='flex'; load(); setInterval(load, 4000); }
+        async function load() {
+            const res = await fetch(`https://api.github.com/repos/Otaman1221/messenger_db_core/contents/messages?nocache=${Date.now()}`, 
+                { headers: { "Authorization": `token ${t}` } });
+            if(res.ok) {
+                const files = await res.json();
+                const jsonFiles = files.filter(f => f.name.endsWith('.json')).sort((a,b) => a.name.localeCompare(b.name));
+                let h = "";
+                for(let f of jsonFiles.slice(-20)) {
+                    const m = await (await fetch(f.download_url)).json();
+                    h += `<div class="msg ${m.nick === document.getElementById('nick').value ? 'my' : ''}"><b>${m.nick}:</b><br>${m.text}</div>`;
                 }
+                document.getElementById('chat').innerHTML = h;
+                document.getElementById('chat').scrollTop = document.getElementById('chat').scrollHeight;
             }
-            async function send(){
-                const txt = document.getElementById('msg').value;
-                const ts = Date.now();
-                const content = btoa(unescape(encodeURIComponent(JSON.stringify({nick: "WebUser", text: txt, ts: ts}))));
-                await fetch(`https://api.github.com/repos/Otaman1221/messenger_db_core/contents/messages/msg_${ts}.json`, {
-                    method: "PUT",
-                    headers: {"Authorization":`token ${t}`, "Content-Type":"application/json"},
-                    body: JSON.stringify({message:"web_msg", content: content})
-                });
-                document.getElementById('msg').value = '';
-                load();
-            }
-        </script>
-    </body></html>
+        }
+        async function send() {
+            const mi = document.getElementById('m'), ni = document.getElementById('nick');
+            const ts = Date.now();
+            const content = btoa(unescape(encodeURIComponent(JSON.stringify({nick: ni.value || "Web", text: mi.value, ts: ts}))));
+            await fetch(`https://api.github.com/repos/Otaman1221/messenger_db_core/contents/messages/msg_${ts}.json`, {
+                method: "PUT", headers: { "Authorization": `token ${t}`, "Content-Type": "application/json" },
+                body: JSON.stringify({ message: "web_msg", content: content })
+            });
+            mi.value = ''; load();
+        }
+    </script>
+</body></html>
