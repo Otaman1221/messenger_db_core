@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitMesh Ultra (Serverless)</title>
+    <style>
+        body { font-family: sans-serif; background: #e5ddd5; margin: 0; display: flex; flex-direction: column; height: 100vh; }
+        #chat { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 8px; }
+        .msg { background: white; padding: 10px; border-radius: 12px; max-width: 85%; box-shadow: 0 1px 1px rgba(0,0,0,0.1); }
+        .my { align-self: flex-end; background: #dcf8c6; }
+        .sender { font-weight: bold; color: #075e54; font-size: 0.75em; margin-bottom: 2px; }
+        #input-area { background: #f0f0f0; padding: 10px; display: flex; gap: 8px; border-top: 1px solid #ddd; }
+        input { flex: 1; padding: 12px; border: none; border-radius: 20px; outline: none; }
+        button { background: #128c7e; color: white; border: none; padding: 10px 15px; border-radius: 20px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div id="chat"></div>
+    <div id="input-area">
+        <input type="text" id="n" placeholder="Нік" style="width: 60px; flex: none;">
+        <input type="text" id="t" placeholder="Повідомлення..." onkeypress="if(event.key==='Enter')send()">
+        <button onclick="send()">></button>
+    </div>
+    <script>
+        const CONFIG = {
+            token: "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",
+            user: "Otaman1221",
+            repo: "messenger_db_core"
+        };
+
+        async function load() {
+            const url = `https://api.github.com/repos/${CONFIG.user}/${CONFIG.repo}/contents/messages`;
+            const res = await fetch(url, { headers: { "Authorization": `token ${CONFIG.token}` } });
+            if (res.ok) {
+                const files = await res.json();
+                let msgs = [];
+                for (let f of files.slice(-20)) {
+                    const c = await (await fetch(f.download_url)).json();
+                    msgs.push(c);
+                }
+                document.getElementById('chat').innerHTML = msgs.sort((a,b)=>a.timestamp-b.timestamp).map(m => `
+                    <div class="msg ${m.sender === document.getElementById('n').value ? 'my' : ''}">
+                        <div class="sender">${m.sender}</div><div>${m.text}</div>
+                    </div>`).join('');
+                document.getElementById('chat').scrollTop = document.getElementById('chat').scrollHeight;
+            }
+        }
+
+        async function send() {
+            const ti = document.getElementById('t');
+            if (!ti.value) return;
+            const ts = Date.now();
+            const content = btoa(unescape(encodeURIComponent(JSON.stringify({sender: document.getElementById('n').value || "User", text: ti.value, timestamp: ts}))));
+            ti.value = '';
+            await fetch(`https://api.github.com/repos/${CONFIG.user}/${CONFIG.repo}/contents/messages/msg_${ts}.json`, {
+                method: "PUT",
+                headers: { "Authorization": `token ${CONFIG.token}`, "Content-Type": "application/json" },
+                body: JSON.stringify({ message: "web msg", content: content })
+            });
+            load();
+        }
+        setInterval(load, 5000); load();
+    </script>
+</body>
+</html>
