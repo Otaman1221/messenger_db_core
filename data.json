@@ -1,6 +1,13 @@
 {
   "channels": {
-    "general": [],
+    "general": [
+      {
+        "user": "Admin",
+        "text": "Привіт",
+        "time": "23:29",
+        "is_admin": true
+      }
+    ],
     "tech": [],
     "news": []
   }
