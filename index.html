@@ -2,9 +2,9 @@
 <html lang="uk">
 <head>
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GitMesh Ultra (Serverless)</title>
+    <title>GitMesh Ultra</title>
     <style>
-        body { font-family: sans-serif; background: #e5ddd5; margin: 0; display: flex; flex-direction: column; height: 100vh; }
+        body { font-family: -apple-system, sans-serif; background: #e5ddd5; margin: 0; display: flex; flex-direction: column; height: 100vh; }
         #chat { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 8px; }
         .msg { background: white; padding: 10px; border-radius: 12px; max-width: 85%; box-shadow: 0 1px 1px rgba(0,0,0,0.1); }
         .my { align-self: flex-end; background: #dcf8c6; }
@@ -17,7 +17,7 @@
 <body>
     <div id="chat"></div>
     <div id="input-area">
-        <input type="text" id="n" placeholder="Нік" style="width: 60px; flex: none;">
+        <input type="text" id="n" placeholder="Нік" style="width: 65px; flex: none;">
         <input type="text" id="t" placeholder="Повідомлення..." onkeypress="if(event.key==='Enter')send()">
         <button onclick="send()">></button>
     </div>
@@ -35,11 +35,11 @@
                 if (res.ok) {
                     const files = await res.json();
                     let msgs = [];
-                    for (let f of files.slice(-20)) {
-                        try {
-                            const c = await (await fetch(f.download_url)).json();
-                            msgs.push(c);
-                        } catch(e) {}
+                    // Завантажуємо останні 20 повідомлень
+                    const lastFiles = files.slice(-20);
+                    for (let f of lastFiles) {
+                        const c = await (await fetch(f.download_url)).json();
+                        msgs.push(c);
                     }
                     document.getElementById('chat').innerHTML = msgs.sort((a,b)=>a.timestamp-b.timestamp).map(m => `
                         <div class="msg ${m.sender === document.getElementById('n').value ? 'my' : ''}">
@@ -47,17 +47,17 @@
                         </div>`).join('');
                     document.getElementById('chat').scrollTop = document.getElementById('chat').scrollHeight;
                 }
-            } catch(e) {}
+            } catch(e) { console.error(e); }
         }
 
         async function send() {
             const ti = document.getElementById('t');
+            const ni = document.getElementById('n');
             if (!ti.value) return;
             const ts = Date.now();
-            const content = btoa(unescape(encodeURIComponent(JSON.stringify({sender: document.getElementById('n').value || "User", text: ti.value, timestamp: ts}))));
-            const filename = `msg_${ts}.json`;
+            const content = btoa(unescape(encodeURIComponent(JSON.stringify({sender: ni.value || "Гість", text: ti.value, timestamp: ts}))));
             ti.value = '';
-            await fetch(`https://api.github.com/repos/${CONFIG.user}/${CONFIG.repo}/contents/messages/${filename}`, {
+            await fetch(`https://api.github.com/repos/${CONFIG.user}/${CONFIG.repo}/contents/messages/msg_${ts}.json`, {
                 method: "PUT",
                 headers: { "Authorization": `token ${CONFIG.token}`, "Content-Type": "application/json" },
                 body: JSON.stringify({ message: "web msg", content: content })
