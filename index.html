@@ -1,26 +1,74 @@
 <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="UTF-8"><title>Sambir Messenger PRO</title>
-            <style>
-                body { background: #121212; color: #eee; font-family: sans-serif; padding: 20px; margin: 0; }
-                #chat { background: #1e1e1e; border-radius: 10px; height: 85vh; overflow-y: auto; padding: 20px; border: 1px solid #333; }
-                .msg { margin-bottom: 12px; padding: 10px; border-bottom: 1px solid #222; }
-                .u { color: #3498db; font-weight: bold; }
-                .t { color: #555; font-size: 0.8em; float: right; }
-            </style>
-        </head>
-        <body>
-            <div id="chat">Синхронізація з репозиторієм...</div>
-            <script>
-                async function load() {
-                    const r = await fetch('data.json?v=' + Date.now());
-                    const d = await r.json();
-                    document.getElementById('chat').innerHTML = d.map(m => `
-                        <div class="msg"><span class="t">${m.time}</span><span class="u">${m.user}</span><br>${m.text}</div>
-                    `).reverse().join('');
-                }
-                setInterval(load, 5000); load();
-            </script>
-        </body>
-        </html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sambir Messenger Web</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { background-color: #0f1621; color: #fff; font-family: sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; }
+        header { background: #17212b; padding: 15px; text-align: center; border-bottom: 1px solid #101921; }
+        #chat { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); background-attachment: fixed; }
+        .msg-row { display: flex; flex-direction: column; margin-bottom: 10px; max-width: 85%; }
+        .msg-row.admin { align-self: flex-end; }
+        .msg-row.user { align-self: flex-start; }
+        .bubble { padding: 10px 15px; border-radius: 15px; background: #182533; box-shadow: 0 1px 2px rgba(0,0,0,0.3); }
+        .admin .bubble { background: #2b5278; }
+        .u { font-size: 12px; color: #40a7e3; font-weight: bold; }
+        .t { font-size: 10px; color: #6c7883; text-align: right; margin-top: 5px; }
+        .input-area { background: #17212b; padding: 15px; display: flex; gap: 10px; }
+        input { flex: 1; background: transparent; border: none; color: white; outline: none; }
+        button { background: none; border: none; color: #5288c1; font-weight: bold; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <header>Sambir Messenger PRO (Web)</header>
+    <div id="chat">Завантаження...</div>
+    <div class="input-area">
+        <input type="text" id="mInput" placeholder="Повідомлення..." onkeypress="if(event.key==='Enter')send()">
+        <button onclick="send()">Надіслати</button>
+    </div>
+
+    <script>
+        // GitHub заблокує файл, якщо тут буде реальний токен.
+        // Адмін-панель замінить цей маркер на реальний токен при публікації.
+        const TOKEN = "YOUR_TOKEN_PLACEHOLDER";
+        const REPO_API = "https://api.github.com/repos/Otaman1221/messenger_db_core/contents/data.json";
+
+        async function load() {
+            try {
+                const r = await fetch(REPO_API + "?t=" + Date.now(), { headers: { "Authorization": `token ${TOKEN}` } });
+                const d = await r.json();
+                const msgs = JSON.parse(decodeURIComponent(escape(atob(d.content))));
+                document.getElementById('chat').innerHTML = msgs.map(m => `
+                    <div class="msg-row ${m.is_admin ? 'admin' : 'user'}">
+                        <div class="bubble">
+                            <span class="u">${m.user}</span>
+                            <div>${m.text}</div>
+                            <div class="t">${m.time}</div>
+                        </div>
+                    </div>
+                `).join('');
+                document.getElementById('chat').scrollTop = document.getElementById('chat').scrollHeight;
+            } catch(e) { console.error("Error", e); }
+        }
+
+        async function send() {
+            const input = document.getElementById('mInput');
+            if(!input.value.trim()) return;
+            const res = await fetch(REPO_API, { headers: { "Authorization": `token ${TOKEN}` } });
+            const f = await res.json();
+            const msgs = JSON.parse(decodeURIComponent(escape(atob(f.content))));
+            msgs.push({ user: "Гість", text: input.value, time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}), is_admin: false });
+            const newContent = btoa(unescape(encodeURIComponent(JSON.stringify(msgs, null, 2))));
+            await fetch(REPO_API, {
+                method: "PUT",
+                headers: { "Authorization": `token ${TOKEN}`, "Content-Type": "application/json" },
+                body: JSON.stringify({ message: "Web update", content: newContent, sha: f.sha })
+            });
+            input.value = ''; load();
+        }
+        setInterval(load, 5000); load();
+    </script>
+</body>
+</html>
