@@ -29,23 +29,25 @@
         };
 
         async function load() {
-            const url = `https://api.github.com/repos/${CONFIG.user}/${CONFIG.repo}/contents/messages`;
-            const res = await fetch(url, { headers: { "Authorization": `token ${CONFIG.token}` } });
-            if (res.ok) {
-                const files = await res.json();
-                let msgs = [];
-                for (let f of files.slice(-20)) {
-                    try {
-                        const c = await (await fetch(f.download_url)).json();
-                        msgs.push(c);
-                    } catch(e) {}
+            try {
+                const url = `https://api.github.com/repos/${CONFIG.user}/${CONFIG.repo}/contents/messages`;
+                const res = await fetch(url, { headers: { "Authorization": `token ${CONFIG.token}` } });
+                if (res.ok) {
+                    const files = await res.json();
+                    let msgs = [];
+                    for (let f of files.slice(-20)) {
+                        try {
+                            const c = await (await fetch(f.download_url)).json();
+                            msgs.push(c);
+                        } catch(e) {}
+                    }
+                    document.getElementById('chat').innerHTML = msgs.sort((a,b)=>a.timestamp-b.timestamp).map(m => `
+                        <div class="msg ${m.sender === document.getElementById('n').value ? 'my' : ''}">
+                            <div class="sender">${m.sender}</div><div>${m.text}</div>
+                        </div>`).join('');
+                    document.getElementById('chat').scrollTop = document.getElementById('chat').scrollHeight;
                 }
-                document.getElementById('chat').innerHTML = msgs.sort((a,b)=>a.timestamp-b.timestamp).map(m => `
-                    <div class="msg ${m.sender === document.getElementById('n').value ? 'my' : ''}">
-                        <div class="sender">${m.sender}</div><div>${m.text}</div>
-                    </div>`).join('');
-                document.getElementById('chat').scrollTop = document.getElementById('chat').scrollHeight;
-            }
+            } catch(e) {}
         }
 
         async function send() {
