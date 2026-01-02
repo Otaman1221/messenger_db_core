@@ -1,12 +1,14 @@
-[
-  {
-    "user": "User_87",
-    "text": "Привіт ",
-    "time": "22:42:25"
-  },
-  {
-    "user": "User_83",
-    "text": "Привіт ",
-    "time": "22:42:45"
+{
+  "channels": {
+    "general": [
+      {
+        "user": "Admin",
+        "text": "Привіт",
+        "time": "23:15",
+        "is_admin": true
+      }
+    ],
+    "tech": [],
+    "news": []
   }
-]
+}
