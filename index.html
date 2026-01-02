@@ -11,7 +11,7 @@
         .sender { font-weight: bold; color: #075e54; font-size: 0.75em; margin-bottom: 2px; }
         #input-area { background: #f0f0f0; padding: 10px; display: flex; gap: 8px; border-top: 1px solid #ddd; }
         input { flex: 1; padding: 12px; border: none; border-radius: 20px; outline: none; }
-        button { background: #128c7e; color: white; border: none; padding: 10px 15px; border-radius: 20px; cursor: pointer; }
+        button { background: #128c7e; color: white; border: none; padding: 10px 15px; border-radius: 20px; cursor: pointer; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -35,8 +35,10 @@
                 const files = await res.json();
                 let msgs = [];
                 for (let f of files.slice(-20)) {
-                    const c = await (await fetch(f.download_url)).json();
-                    msgs.push(c);
+                    try {
+                        const c = await (await fetch(f.download_url)).json();
+                        msgs.push(c);
+                    } catch(e) {}
                 }
                 document.getElementById('chat').innerHTML = msgs.sort((a,b)=>a.timestamp-b.timestamp).map(m => `
                     <div class="msg ${m.sender === document.getElementById('n').value ? 'my' : ''}">
@@ -51,8 +53,9 @@
             if (!ti.value) return;
             const ts = Date.now();
             const content = btoa(unescape(encodeURIComponent(JSON.stringify({sender: document.getElementById('n').value || "User", text: ti.value, timestamp: ts}))));
+            const filename = `msg_${ts}.json`;
             ti.value = '';
-            await fetch(`https://api.github.com/repos/${CONFIG.user}/${CONFIG.repo}/contents/messages/msg_${ts}.json`, {
+            await fetch(`https://api.github.com/repos/${CONFIG.user}/${CONFIG.repo}/contents/messages/${filename}`, {
                 method: "PUT",
                 headers: { "Authorization": `token ${CONFIG.token}`, "Content-Type": "application/json" },
                 body: JSON.stringify({ message: "web msg", content: content })
