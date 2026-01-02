@@ -1,19 +1,6 @@
 {
   "channels": {
-    "general": [
-      {
-        "user": "Admin",
-        "text": "Привіт",
-        "time": "23:37",
-        "is_admin": true
-      },
-      {
-        "user": "Admin",
-        "text": "Як справи",
-        "time": "23:40",
-        "is_admin": true
-      }
-    ],
+    "general": [],
     "tech": [],
     "news": []
   }
