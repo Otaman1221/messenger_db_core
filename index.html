@@ -35,11 +35,12 @@
                 if (res.ok) {
                     const files = await res.json();
                     let msgs = [];
-                    // Завантажуємо останні 20 повідомлень
-                    const lastFiles = files.slice(-20);
+                    const lastFiles = files.slice(-30);
                     for (let f of lastFiles) {
-                        const c = await (await fetch(f.download_url)).json();
-                        msgs.push(c);
+                        if (f.name.endsWith('.json')) {
+                            const c = await (await fetch(f.download_url)).json();
+                            msgs.push(c);
+                        }
                     }
                     document.getElementById('chat').innerHTML = msgs.sort((a,b)=>a.timestamp-b.timestamp).map(m => `
                         <div class="msg ${m.sender === document.getElementById('n').value ? 'my' : ''}">
@@ -64,7 +65,7 @@
             });
             load();
         }
-        setInterval(load, 5000); load();
+        setInterval(load, 4000); load();
     </script>
 </body>
 </html>
